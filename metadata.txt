@@ -9,15 +9,15 @@
 [general]
 name=NDVI calculator
 qgisMinimumVersion=2.0
-description=Calculates the NDVI for an image
-version=0.1
+description=Calculates the Normalized Difference Vegetation Index (NDVI)
+version=1.0
 author=Christina Ludwig
 email=s6chludw@uni-trier.de
 
-about=This plugin calculates the NDVI of an input images. The calculation is done tile based, whereby the user can set the size of the tiles.
+about=This plugin calculates the Normalized Difference Vegetation Index of an input image, that contains a red and a near infra red channel. The calculation is done tile based so that also large images can be processed. The number of tiles can be set by the user. 
 
 tracker=...
-repository=...
+repository= https://github.com/redfrexx/NDVIcalculator
 # End of mandatory metadata
 
 # Recommended items:
@@ -26,9 +26,9 @@ repository=...
 # changelog=
 
 # Tags are comma separated with spaces allowed
-tags=...
+tags=NDVI, remote sensing, tilebased
 
-homepage=...
+homepage= https://github.com/redfrexx/NDVIcalculator
 category=Plugins
 icon=icon.png
 # experimental flag

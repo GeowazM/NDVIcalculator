@@ -20,8 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication
-from PyQt4.QtGui import QAction, QIcon
+from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, SIGNAL
+from PyQt4.QtGui import QAction, QIcon, QFileDialog
 # Initialize Qt resources from file resources.py
 import resources
 # Import the code for the dialog
@@ -171,6 +171,9 @@ class NDVIcalculator:
             callback=self.run,
             parent=self.iface.mainWindow())
 
+        self.dlg.connect(self.dlg.button_input, SIGNAL("clicked()"), self.OpenBrowse)
+        self.dlg.connect(self.dlg.button_output, SIGNAL("clicked()"), self.OpenSave)
+
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -202,7 +205,7 @@ class NDVIcalculator:
 
             # Open dataset
             dataset = gdal.Open(inputFile, GA_ReadOnly )
-            #nrows, ncols = dataset.GetRasterBand(1).ReadAsArray().shape
+            rowsOut, colsOut = dataset.GetRasterBand(1).ReadAsArray().shape
 
             # Get Geotransformation and projection from input file for output file
             geotrans = dataset.GetGeoTransform()
@@ -215,7 +218,7 @@ class NDVIcalculator:
 
             # Create output file
             driver = gdal.GetDriverByName("GTIFF")
-            NDVIout = driver.Create(outputFile, ncols, nrows, 1, gdal.GDT_Float32)
+            NDVIout = driver.Create(outputFile, colsOut, rowsOut, 1, gdal.GDT_Float32)
             NDVIout.GetRasterBand(1).SetNoDataValue(nodataValue)
             NDVIout.SetGeoTransform(geotrans)
             NDVIout.SetProjection(proj)
@@ -231,11 +234,19 @@ class NDVIcalculator:
 
                 # Write to output file
                 tileCoords = redTiles.GetCurrentTileCoordinates()
-                print tileCoords
                 NDVI = np.where(np.isnan(NDVI), nodataValue, NDVI )
                 NDVIout.GetRasterBand(1).WriteArray(NDVI, tileCoords[0], tileCoords[1])
 
             del NDVIout
+            self.iface.addRasterLayer(outputFile, os.path.basename(outputFile))
+
+    def OpenBrowse(self):        
+        inputfile = QFileDialog.getOpenFileName()
+        self.dlg.lineEdit_input.setText(inputfile)
+
+    def OpenSave(self):        
+        outputfile = QFileDialog.getSaveFileName()
+        self.dlg.lineEdit_output.setText(outputfile)
 
 #
 # def outFile( self ):
