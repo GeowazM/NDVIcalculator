@@ -36,7 +36,7 @@ class splitter():
         self.tiles = []
         for i in range(0, len(lolimY)):
             for j in range(0, len(lolimX)):
-                tile = (lolimX[j], lolimY[i], stepsX[j], stepsY[i])
+                tile = (int(lolimX[j]), int(lolimY[i]), int(stepsX[j]), int(stepsY[i]))
                 self.tiles.append(tile)
                 
 
