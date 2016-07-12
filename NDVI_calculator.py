@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 """
+
+Abschlussarbeit zum Kurs GIS-Anwendungsentwicklung im SS 2013
+von Christina Ludwig (1166542)
+
 /***************************************************************************
  NDVIcalculator
                                  A QGIS plugin
@@ -21,7 +25,7 @@
  ***************************************************************************/
 """
 from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, SIGNAL
-from PyQt4.QtGui import QAction, QIcon, QFileDialog
+from PyQt4.QtGui import QAction, QIcon, QFileDialog, QMessageBox
 # Initialize Qt resources from file resources.py
 import resources
 # Import the code for the dialog
@@ -194,17 +198,41 @@ class NDVIcalculator:
         result = self.dlg.exec_()
         # See if OK was pressed
         if result:
-            # Variables
+            # Get values from GUI
             inputFile = self.dlg.lineEdit_input.text()
+            if not os.path.exists(inputFile):
+                QMessageBox.information(None, "Error", "%s was not found." % inputFile)
+                self.run()
+
+            # Check dataset
+            dataset = gdal.Open(inputFile, GA_ReadOnly )
+            if dataset == None:
+                QMessageBox.information(None, "Error", "%s not recognised as a supported file format." % inputFile)
+                self.run()
+
+            # Check output file
             outputFile = self.dlg.lineEdit_output.text()
+            if outputFile == "":
+                QMessageBox.information(None, "Error", "No output file provided.")
+                self.run()
+
+            # Check band numbers of NIR and red band
             bandNir = self.dlg.spinBox_nir.value()
+            # Check if band numbers are valid
+            if bandNir > dataset.RasterCount:
+                QMessageBox.information(None, "Error", "Band number of NIR band does not exists in input raster.")
+                self.run()
+
             bandRed = self.dlg.spinBox_red.value()
+            if bandRed > dataset.RasterCount:
+                QMessageBox.information(None, "Error", "Band number of red band does not exists in input raster.")
+                self.run()
+
+            # Number of rows and columns of tile
             ncols = self.dlg.spinBox_x.value()
             nrows = self.dlg.spinBox_y.value()
-            nodataValue = -32768
 
-            # Open dataset
-            dataset = gdal.Open(inputFile, GA_ReadOnly )
+            # Size of input raster
             rowsOut, colsOut = dataset.GetRasterBand(1).ReadAsArray().shape
 
             # Get Geotransformation and projection from input file for output file
@@ -218,6 +246,7 @@ class NDVIcalculator:
 
             # Create output file
             driver = gdal.GetDriverByName("GTIFF")
+            nodataValue = -32768
             NDVIout = driver.Create(outputFile, colsOut, rowsOut, 1, gdal.GDT_Float32)
             NDVIout.GetRasterBand(1).SetNoDataValue(nodataValue)
             NDVIout.SetGeoTransform(geotrans)
@@ -247,38 +276,3 @@ class NDVIcalculator:
     def OpenSave(self):        
         outputfile = QFileDialog.getSaveFileName()
         self.dlg.lineEdit_output.setText(outputfile)
-
-#
-# def outFile( self ):
-#     ( self.filePath, self.encoding ) = saveDialog( self.dlg )
-#     if self.filePath is None or self.encoding is None:
-#         return
-#
-#     outPath = self.filePath
-#     if "\\" in outPath:
-#         digit = -((len(outPath) - outPath.rfind("\\")) - 1)
-#         self.fileName = outPath[digit:]
-#     else:
-#         digit = -((len(outPath) - outPath.rfind("/")) - 1)
-#         self.fileName = outPath[digit:]
-#     outName = self.fileName
-#     if outName[-4:] == ".shp":
-#         digit = len(outName) - 4
-#         self.fileName = self.fileName[:digit]
-#
-#
-# # Generate a save file dialog with a dropdown box for choosing encoding style
-# def saveDialog( parent, filtering="Shapefiles (*.shp *.SHP)"):
-#     settings = QSettings()
-#     dirName = settings.value( "/UI/lastShapefileDir" )
-#     encode = settings.value( "/UI/encoding" )
-#     fileDialog = QgsEncodingFileDialog( parent, "Save output shapefile", dirName, filtering, encode )
-#     fileDialog.setDefaultSuffix( "shp" )
-#     fileDialog.setFileMode( QFileDialog.AnyFile )
-#     fileDialog.setAcceptMode( QFileDialog.AcceptSave )
-#     fileDialog.setConfirmOverwrite( True )
-#     if not fileDialog.exec_() == QDialog.Accepted:
-#             return None, None
-#     files = fileDialog.selectedFiles()
-#     settings.setValue("/UI/lastShapefileDir", QFileInfo( unicode( files[0] ) ).absolutePath() )
-#     return ( unicode( files[0] ), unicode( fileDialog.encoding() ) )
